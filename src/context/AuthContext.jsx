@@ -49,12 +49,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const register = useCallback(async (payload) => {
-    const data = await registerApi(payload);
-    if (data?.token) setStoredToken(data.token);
-    const profile = await getMyProfileApi();
-    setUser(profile);
-    setStoredUser(profile);
-    return profile;
+    return registerApi(payload);
   }, []);
 
   const logout = useCallback(() => {

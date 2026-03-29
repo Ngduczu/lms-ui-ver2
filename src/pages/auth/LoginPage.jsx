@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthLayout } from '../../layouts/AuthLayout';
@@ -12,9 +12,13 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const isSubmitting = useRef(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
+    if (isSubmitting.current) return;
+    isSubmitting.current = true;
+    
     setError('');
     setLoading(true);
     try {
@@ -24,6 +28,7 @@ export function LoginPage() {
       setError(err.message);
     } finally {
       setLoading(false);
+      isSubmitting.current = false;
     }
   }
 

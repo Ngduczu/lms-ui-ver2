@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { AuthLayout } from '../../layouts/AuthLayout';
@@ -12,18 +12,29 @@ export function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const isSubmitting = useRef(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
+    if (isSubmitting.current) return;
+    isSubmitting.current = true;
+    
     setError('');
+    setSuccessMessage('');
     setLoading(true);
+    
     try {
-      const profile = await register(form);
-      navigate(getDefaultPathByRole(profile?.role), { replace: true });
+      await register(form);
+      setSuccessMessage('Đăng ký thành công. Vui lòng đăng nhập để tiếp tục.');
+      setTimeout(() => {
+        navigate('/login', { replace: true });
+      }, 900);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
+      isSubmitting.current = false;
     }
   }
 
@@ -52,6 +63,7 @@ export function RegisterPage() {
           <input className="input-field" placeholder="0912345678" pattern="^0\d{9}$" maxLength={10} title="10 chữ số, bắt đầu bằng 0" value={form.phoneNumber} onChange={(e) => setForm((p) => ({ ...p, phoneNumber: e.target.value }))} />
         </div>
         {error ? <p className="text-error">{error}</p> : null}
+        {successMessage ? <p style={{ color: 'var(--color-success, #16a34a)', fontSize: '0.875rem' }}>{successMessage}</p> : null}
         <button type="submit" className="btn-primary" style={{ width: '100%', padding: '0.625rem' }} disabled={loading}>
           {loading ? 'Đang tạo tài khoản...' : 'Đăng ký'}
         </button>
