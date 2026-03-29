@@ -37,7 +37,7 @@ export function TeacherMyCoursesPage() {
         description: createForm.description.trim(),
         status: createForm.status,
         maxStudent: Number(createForm.maxStudent) || 50,
-        teacherId: user.userId,
+        teacherId: (user?.userId || user?.id),
       });
       notifySuccess('Tạo khóa học thành công!');
       setShowCreateCourse(false);
@@ -49,15 +49,15 @@ export function TeacherMyCoursesPage() {
   }
 
   const fetchCourses = useCallback(async () => {
-    if (!user?.userId) return;
+    if (!(user?.userId || user?.id)) return;
     setLoading(true);
     try {
-      const data = await getCoursesApi({ page, size: 20, search: search || undefined, teacherId: user.userId });
+      const data = await getCoursesApi({ page, size: 20, search: search || undefined, teacherId: (user?.userId || user?.id) });
       setCourses(data?.content || []);
       setTotalPages(data?.totalPages || 1);
       setTotalElements(data?.totalElements || 0);
     } catch {} finally { setLoading(false); }
-  }, [user?.userId, page, search]);
+  }, [(user?.userId || user?.id), page, search]);
 
   useEffect(() => { fetchCourses(); }, [fetchCourses]);
 

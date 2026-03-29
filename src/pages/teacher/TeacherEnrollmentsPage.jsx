@@ -23,14 +23,14 @@ export function TeacherEnrollmentsPage() {
   const [error, setError] = useState('');
 
   const fetchMyCourses = useCallback(async () => {
-    if (!user?.userId) return;
+    if (!(user?.userId || user?.id)) return;
     try {
-      const data = await getCoursesApi({ page: 0, size: 200, teacherId: user.userId });
+      const data = await getCoursesApi({ page: 0, size: 200, teacherId: (user?.userId || user?.id) });
       const mine = data?.content || [];
       setCourses(mine);
       if (mine.length && !selectedCourseId) setSelectedCourseId(String(mine[0].id));
     } catch (err) { setError(err.message); }
-  }, [user?.userId, selectedCourseId]);
+  }, [(user?.userId || user?.id), selectedCourseId]);
 
   useEffect(() => { fetchMyCourses(); }, [fetchMyCourses]);
 
