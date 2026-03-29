@@ -22,7 +22,7 @@ export function TeacherMyCoursesPage() {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [showCreateCourse, setShowCreateCourse] = useState(false);
-  const [createForm, setCreateForm] = useState({ name: '', description: '', status: 'ACTIVE', maxStudent: 50 });
+  const [createForm, setCreateForm] = useState({ name: '', description: '', status: 'OPEN', maxStudent: 50 });
 
   useEffect(() => {
     setPage(0);
@@ -41,7 +41,7 @@ export function TeacherMyCoursesPage() {
       });
       notifySuccess('Tạo khóa học thành công!');
       setShowCreateCourse(false);
-      setCreateForm({ name: '', description: '', status: 'ACTIVE', maxStudent: 50 });
+      setCreateForm({ name: '', description: '', status: 'OPEN', maxStudent: 50 });
       fetchCourses();
     } catch (err) {
       notifyError(err.message || 'Lỗi tạo khóa học');
@@ -106,8 +106,9 @@ export function TeacherMyCoursesPage() {
             <div className="field-group">
               <label className="field-label">Trạng thái</label>
               <select className="input-field" value={createForm.status} onChange={(e) => setCreateForm({ ...createForm, status: e.target.value })}>
-                <option value="ACTIVE">Hoạt động</option>
-                <option value="INACTIVE">Khóa</option>
+                <option value="OPEN">Mở</option>
+                <option value="CLOSED">Đóng</option>
+                <option value="HIDDEN">Ẩn</option>
               </select>
             </div>
             <div className="field-group">
