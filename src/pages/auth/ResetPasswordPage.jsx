@@ -4,6 +4,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import { AuthLayout } from '../../layouts/AuthLayout';
 import { resetPasswordApi } from '../../api/authApi';
 import { validatePassword, validateConfirmPassword } from '../../lib/validate';
+import { notifyError } from '../../lib/notify';
 
 export function ResetPasswordPage() {
   const navigate = useNavigate();
@@ -13,19 +14,22 @@ export function ResetPasswordPage() {
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [fieldErrors, setFieldErrors] = useState({});
   const [success, setSuccess] = useState('');
 
   function validateForm() {
-    const errors = {};
+    const errors = [];
+
     const pwErr = validatePassword(form.newPassword);
-    if (pwErr) errors.newPassword = pwErr;
+    if (pwErr) errors.push(pwErr);
 
     const confirmErr = validateConfirmPassword(form.newPassword, form.confirmPassword);
-    if (confirmErr) errors.confirmPassword = confirmErr;
+    if (confirmErr) errors.push(confirmErr);
 
-    setFieldErrors(errors);
-    return Object.keys(errors).length === 0;
+    if (errors.length > 0) {
+      notifyError(errors.join('\n'));
+      return false;
+    }
+    return true;
   }
 
   async function handleSubmit(e) {
@@ -46,22 +50,22 @@ export function ResetPasswordPage() {
   }
 
   return (
-    <AuthLayout title="Đặt lại mật khẩu" subtitle="Nhập mật khẩu mới cho tài khoản của bạn">
+    <AuthLayout title="Đặt lại mật khẩu" subtitle="Nhập mật khẩu mới cho tài khoản của bạn" footerMode="reset">
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         <div className="field-group">
-          <label className="field-label">Mật khẩu mới</label>
+          <label className="field-label">Mật khẩu mới <span style={{ color: '#ef4444' }}>*</span></label>
           <div className="password-wrapper">
-            <input className="input-field" type={show ? 'text' : 'password'} required minLength={8} placeholder="Tối thiểu 8 ký tự (a-z, A-Z, 0-9)" value={form.newPassword} onChange={(e) => { setForm((p) => ({ ...p, newPassword: e.target.value })); setFieldErrors((p) => ({ ...p, newPassword: '' })); }} />
+            <input className="input-field" type={show ? 'text' : 'password'} placeholder="Nhập mật khẩu mới" value={form.newPassword} onChange={(e) => setForm((p) => ({ ...p, newPassword: e.target.value }))} />
             <button type="button" className="password-toggle" onClick={() => setShow((p) => !p)}>
               {show ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           </div>
-          {fieldErrors.newPassword ? <p className="text-error">{fieldErrors.newPassword}</p> : null}
+          <p className="field-hint">Tối thiểu 8 ký tự, gồm chữ hoa (A-Z), chữ thường (a-z) và số (0-9)</p>
         </div>
         <div className="field-group">
-          <label className="field-label">Xác nhận mật khẩu</label>
-          <input className="input-field" type="password" required minLength={8} placeholder="Nhập lại mật khẩu mới" value={form.confirmPassword} onChange={(e) => { setForm((p) => ({ ...p, confirmPassword: e.target.value })); setFieldErrors((p) => ({ ...p, confirmPassword: '' })); }} />
-          {fieldErrors.confirmPassword ? <p className="text-error">{fieldErrors.confirmPassword}</p> : null}
+          <label className="field-label">Xác nhận mật khẩu <span style={{ color: '#ef4444' }}>*</span></label>
+          <input className="input-field" type="password" placeholder="Nhập lại mật khẩu mới" value={form.confirmPassword} onChange={(e) => setForm((p) => ({ ...p, confirmPassword: e.target.value }))} />
+          <p className="field-hint">Nhập lại chính xác mật khẩu ở trên</p>
         </div>
         {error ? <p className="text-error">{error}</p> : null}
         {success ? <p className="text-success">{success}</p> : null}

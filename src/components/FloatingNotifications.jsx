@@ -36,7 +36,7 @@ export function FloatingNotifications() {
       {/* Toasts */}
       <div className="toast-container">
         {toasts.map((t) => (
-          <div key={t.id} className={`toast-item toast-${t.type}`}>
+          <div key={t.id} className={`toast-item toast-${t.type}`} style={{ whiteSpace: 'pre-line' }}>
             {t.message}
           </div>
         ))}

@@ -36,6 +36,17 @@ export function AuthLayout({ children, title, subtitle, footerMode }) {
             </Link>
           </p>
         ) : null}
+        {footerMode === 'reset' ? (
+          <p style={{ textAlign: 'center', marginTop: '1.25rem', fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
+            <Link to="/login" style={{ color: 'var(--color-primary)', fontWeight: 600, textDecoration: 'none' }}>
+              Đăng nhập
+            </Link>
+            {' · '}
+            <Link to="/register" style={{ color: 'var(--color-primary)', fontWeight: 600, textDecoration: 'none' }}>
+              Đăng ký
+            </Link>
+          </p>
+        ) : null}
       </motion.div>
     </div>
   );

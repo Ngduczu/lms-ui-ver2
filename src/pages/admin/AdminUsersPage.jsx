@@ -27,7 +27,6 @@ export function AdminUsersPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createForm, setCreateForm] = useState({ fullName: '', email: '', password: '', phoneNumber: '', role: 'STUDENT' });
   const [creating, setCreating] = useState(false);
-  const [createFieldErrors, setCreateFieldErrors] = useState({});
 
   // Edit user
   const [showEditModal, setShowEditModal] = useState(false);
@@ -72,17 +71,19 @@ export function AdminUsersPage() {
   // CREATE
   async function handleCreate(e) {
     e.preventDefault();
-    const errs = {};
+    const errors = [];
     const nameErr = validateRequired(createForm.fullName, 'Họ và tên');
-    if (nameErr) errs.fullName = nameErr;
+    if (nameErr) errors.push(nameErr);
     const emailErr = validateEmail(createForm.email);
-    if (emailErr) errs.email = emailErr;
+    if (emailErr) errors.push(emailErr);
     const pwErr = validatePassword(createForm.password);
-    if (pwErr) errs.password = pwErr;
+    if (pwErr) errors.push(pwErr);
     const phoneErr = validatePhone(createForm.phoneNumber);
-    if (phoneErr) errs.phoneNumber = phoneErr;
-    setCreateFieldErrors(errs);
-    if (Object.keys(errs).length > 0) return;
+    if (phoneErr) errors.push(phoneErr);
+    if (errors.length > 0) {
+      notifyError(errors.join('\n'));
+      return;
+    }
 
     setCreating(true);
     try {
@@ -90,7 +91,6 @@ export function AdminUsersPage() {
       notifySuccess('Đã tạo người dùng thành công.');
       setShowCreateModal(false);
       setCreateForm({ fullName: '', email: '', password: '', phoneNumber: '', role: 'STUDENT' });
-      setCreateFieldErrors({});
       fetchUsers();
     } catch (err) {
       setError(err.message);
@@ -300,23 +300,24 @@ export function AdminUsersPage() {
       <Modal open={showCreateModal} onClose={() => setShowCreateModal(false)} title="Tạo người dùng mới">
         <form onSubmit={handleCreate} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
           <div className="field-group" style={{ gridColumn: 'span 2' }}>
-            <label className="field-label">Họ và tên</label>
-            <input className="input-field" required value={createForm.fullName} onChange={(e) => setCreateForm((p) => ({ ...p, fullName: e.target.value }))} />
+            <label className="field-label">Họ và tên <span style={{ color: '#ef4444' }}>*</span></label>
+            <input className="input-field" placeholder="Nguyễn Văn A" value={createForm.fullName} onChange={(e) => setCreateForm((p) => ({ ...p, fullName: e.target.value }))} />
+            <p className="field-hint">Không được để trống</p>
           </div>
           <div className="field-group">
-            <label className="field-label">Email</label>
-            <input className="input-field" type="email" required value={createForm.email} onChange={(e) => { setCreateForm((p) => ({ ...p, email: e.target.value })); setCreateFieldErrors((p) => ({ ...p, email: '' })); }} />
-            {createFieldErrors.email ? <p className="text-error">{createFieldErrors.email}</p> : null}
+            <label className="field-label">Email <span style={{ color: '#ef4444' }}>*</span></label>
+            <input className="input-field" type="text" placeholder="student@utc.edu.vn" value={createForm.email} onChange={(e) => setCreateForm((p) => ({ ...p, email: e.target.value }))} />
+            <p className="field-hint">Định dạng email hợp lệ</p>
           </div>
           <div className="field-group">
-            <label className="field-label">Mật khẩu</label>
-            <input className="input-field" type="password" required minLength={8} placeholder="Tối thiểu 8 ký tự (a-z, A-Z, 0-9)" value={createForm.password} onChange={(e) => { setCreateForm((p) => ({ ...p, password: e.target.value })); setCreateFieldErrors((p) => ({ ...p, password: '' })); }} />
-            {createFieldErrors.password ? <p className="text-error">{createFieldErrors.password}</p> : null}
+            <label className="field-label">Mật khẩu <span style={{ color: '#ef4444' }}>*</span></label>
+            <input className="input-field" type="password" placeholder="Nhập mật khẩu" value={createForm.password} onChange={(e) => setCreateForm((p) => ({ ...p, password: e.target.value }))} />
+            <p className="field-hint">Tối thiểu 8 ký tự, chữ hoa + chữ thường + số</p>
           </div>
           <div className="field-group">
             <label className="field-label">Số điện thoại</label>
-            <input className="input-field" maxLength={10} placeholder="0912345678" value={createForm.phoneNumber} onChange={(e) => { setCreateForm((p) => ({ ...p, phoneNumber: e.target.value.replace(/\D/g, '') })); setCreateFieldErrors((p) => ({ ...p, phoneNumber: '' })); }} />
-            {createFieldErrors.phoneNumber ? <p className="text-error">{createFieldErrors.phoneNumber}</p> : null}
+            <input className="input-field" maxLength={10} placeholder="0912345678" value={createForm.phoneNumber} onChange={(e) => setCreateForm((p) => ({ ...p, phoneNumber: e.target.value.replace(/\D/g, '') }))} />
+            <p className="field-hint">10 chữ số, bắt đầu bằng 0 (không bắt buộc)</p>
           </div>
           <div className="field-group">
             <label className="field-label">Vai trò</label>
