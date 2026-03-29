@@ -22,7 +22,6 @@ const NAV_CONFIG = {
   TEACHER: [
     { section: 'Giảng dạy' },
     { to: '/teacher', icon: BookOpen, label: 'Khóa học của tôi', end: true },
-    { to: '/teacher/courses', icon: GraduationCap, label: 'Tất cả khóa học' },
     { to: '/teacher/enrollments', icon: ClipboardList, label: 'Yêu cầu đăng ký' },
     { to: '/teacher/question-banks', icon: FolderKanban, label: 'Ngân hàng câu hỏi' },
     { section: 'Khác' },

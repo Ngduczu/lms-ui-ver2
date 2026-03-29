@@ -17,7 +17,7 @@ import { AdminEnrollmentsPage } from './pages/admin/AdminEnrollmentsPage';
 
 // Teacher
 import { TeacherMyCoursesPage } from './pages/teacher/TeacherMyCoursesPage';
-import { TeacherCoursesPage } from './pages/teacher/TeacherCoursesPage';
+
 import { TeacherCourseDetailPage } from './pages/teacher/TeacherCourseDetailPage';
 import { TeacherEnrollmentsPage } from './pages/teacher/TeacherEnrollmentsPage';
 import { TeacherQuestionBanksPage } from './pages/teacher/TeacherQuestionBanksPage';
@@ -58,7 +58,7 @@ export default function App() {
           {/* Teacher routes */}
           <Route element={<ProtectedRoute allowedRoles={['TEACHER']} />}>
             <Route path="/teacher" element={<TeacherMyCoursesPage />} />
-            <Route path="/teacher/courses" element={<TeacherCoursesPage />} />
+
             <Route path="/teacher/course/:courseId/detail" element={<TeacherCourseDetailPage />} />
             <Route path="/teacher/course/:courseId/assessments" element={<TeacherAssessmentManagerPage />} />
             <Route path="/teacher/enrollments" element={<TeacherEnrollmentsPage />} />
