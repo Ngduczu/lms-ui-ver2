@@ -35,15 +35,13 @@ export function TeacherCourseDetailPage() {
   const selectedCourse = useMemo(() => courses.find((c) => String(c.id || c.courseId) === String(courseId)), [courses, courseId]);
 
   const fetchMyCourses = useCallback(async () => {
-    const tId = user?.userId || user?.id;
-    if (!tId) return;
     try { 
-      const data = await getCoursesApi({ page: 0, size: 200, teacherId: tId }); 
+      const data = await getCoursesApi({ page: 0, size: 200 }); 
       setCourses(data?.content || []); 
     } catch (e) { 
       setError(e.message); 
     }
-  }, [user?.userId, user?.id]);
+  }, []);
 
   useEffect(() => { fetchMyCourses(); }, [fetchMyCourses]);
   useEffect(() => { if (courseId && activeTab === 'MATERIAL') fetchMaterials(courseId); }, [courseId, activeTab]);

@@ -49,15 +49,14 @@ export function TeacherMyCoursesPage() {
   }
 
   const fetchCourses = useCallback(async () => {
-    if (!(user?.userId || user?.id)) return;
     setLoading(true);
     try {
-      const data = await getCoursesApi({ page, size: 20, search: search || undefined, teacherId: (user?.userId || user?.id) });
+      const data = await getCoursesApi({ page, size: 20, search: search || undefined });
       setCourses(data?.content || []);
       setTotalPages(data?.totalPages || 1);
       setTotalElements(data?.totalElements || 0);
     } catch {} finally { setLoading(false); }
-  }, [(user?.userId || user?.id), page, search]);
+  }, [page, search]);
 
   useEffect(() => { fetchCourses(); }, [fetchCourses]);
 
