@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { RefreshCcw } from 'lucide-react';
 import { getCoursesApi } from '../../api/courseApi';
+import { useAuth } from '../../hooks/useAuth';
 import { DashboardLayout } from '../../layouts/DashboardLayout';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { StatusBadge } from '../../components/ui/StatusBadge';
@@ -19,15 +20,18 @@ export function TeacherCoursesPage() {
     setPage(0);
   }, [search]);
 
+  const { user } = useAuth();
+  
   const fetchCourses = useCallback(async () => {
+    if (!(user?.userId || user?.id)) return;
     setLoading(true);
     try {
-      const data = await getCoursesApi({ page, size: 20, search: search || undefined });
+      const data = await getCoursesApi({ page, size: 20, search: search || undefined, teacherId: (user?.userId || user?.id) });
       setCourses(data?.content || []);
       setTotalPages(data?.totalPages || 1);
       setTotalElements(data?.totalElements || 0);
     } catch {} finally { setLoading(false); }
-  }, [page, search]);
+  }, [page, search, user?.userId, user?.id]);
 
   useEffect(() => { fetchCourses(); }, [fetchCourses]);
 
