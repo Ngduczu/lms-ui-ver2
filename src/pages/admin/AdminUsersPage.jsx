@@ -110,17 +110,17 @@ export function AdminUsersPage() {
   // STATUS
   async function handleToggleStatus(user) {
     const currentStatus = (user.userStatus || '').toUpperCase();
-    const nextStatus = currentStatus === 'ACTIVE' ? 'DISABLED' : 'ACTIVE';
+    const nextStatus = currentStatus === 'ACTIVE' ? 'BAN' : 'ACTIVE';
     const confirmed = await confirmAction({
-      title: nextStatus === 'DISABLED' ? 'Khoá tài khoản?' : 'Mở khoá tài khoản?',
-      message: `Bạn muốn ${nextStatus === 'DISABLED' ? 'khoá' : 'mở khoá'} tài khoản ${user.fullName}?`,
-      confirmText: nextStatus === 'DISABLED' ? 'Khoá' : 'Mở khoá',
-      variant: nextStatus === 'DISABLED' ? 'danger' : 'primary',
+      title: nextStatus === 'BAN' ? 'Khoá tài khoản?' : 'Mở khoá tài khoản?',
+      message: `Bạn muốn ${nextStatus === 'BAN' ? 'khoá' : 'mở khoá'} tài khoản ${user.fullName}?`,
+      confirmText: nextStatus === 'BAN' ? 'Khoá' : 'Mở khoá',
+      variant: nextStatus === 'BAN' ? 'danger' : 'primary',
     });
     if (!confirmed) return;
     try {
       await updateUserStatusApi(user.userId || user.id, nextStatus);
-      notifySuccess(nextStatus === 'DISABLED' ? 'Đã khoá tài khoản.' : 'Đã mở khoá tài khoản.');
+      notifySuccess(nextStatus === 'BAN' ? 'Đã khoá tài khoản.' : 'Đã mở khoá tài khoản.');
       fetchUsers();
     } catch (err) {
       setError(err.message);
@@ -224,7 +224,7 @@ export function AdminUsersPage() {
         <select className="input-field" style={{ width: 'auto', minWidth: '10rem' }} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
           <option value="">Tất cả trạng thái</option>
           <option value="ACTIVE">Hoạt động</option>
-          <option value="DISABLED">Đã khoá</option>
+          <option value="BAN">Đã khoá</option>
         </select>
       </div>
 
@@ -257,11 +257,17 @@ export function AdminUsersPage() {
                 <td className="cell-center"><StatusBadge status={u.userStatus} /></td>
                 <td className="cell-center">
                   <div style={{ display: 'flex', gap: '0.375rem', justifyContent: 'center' }}>
-                    <button className="btn-secondary btn-sm" onClick={() => openEdit(u)}>Sửa</button>
-                    <button className={`btn-sm ${(u.userStatus || '').toUpperCase() === 'ACTIVE' ? 'btn-danger' : 'btn-primary'}`} onClick={() => handleToggleStatus(u)}>
-                      {(u.userStatus || '').toUpperCase() === 'ACTIVE' ? 'Khoá' : 'Mở khoá'}
-                    </button>
-                    <button className="btn-danger btn-sm" onClick={() => handleDeleteUser(u)}>Xóa</button>
+                    {(u.userStatus || '').toUpperCase() !== 'DELETED' ? (
+                      <>
+                        <button className="btn-secondary btn-sm" onClick={() => openEdit(u)}>Sửa</button>
+                        <button className={`btn-sm ${(u.userStatus || '').toUpperCase() === 'ACTIVE' ? 'btn-danger' : 'btn-primary'}`} onClick={() => handleToggleStatus(u)}>
+                          {(u.userStatus || '').toUpperCase() === 'ACTIVE' ? 'Khoá' : 'Mở khoá'}
+                        </button>
+                        <button className="btn-danger btn-sm" onClick={() => handleDeleteUser(u)}>Xóa</button>
+                      </>
+                    ) : (
+                      <span style={{ fontSize: '0.8125rem', color: '#dc2626', fontWeight: 500 }}>Đã bị xóa</span>
+                    )}
                   </div>
                 </td>
               </motion.tr>
