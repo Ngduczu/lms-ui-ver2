@@ -6,6 +6,7 @@ import { DashboardLayout } from '../../layouts/DashboardLayout';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { getRoleLabel } from '../../lib/role';
 import { notifySuccess } from '../../lib/notify';
+import { validatePhone, validatePassword, validateConfirmPassword, validateRequired } from '../../lib/validate';
 
 export function ProfileSettingsPage() {
   const { user, role, refreshProfile } = useAuth();
@@ -16,11 +17,21 @@ export function ProfileSettingsPage() {
   const [pwLoading, setPwLoading] = useState(false);
   const [error, setError] = useState('');
   const [pwError, setPwError] = useState('');
+  const [profileFieldErrors, setProfileFieldErrors] = useState({});
+  const [pwFieldErrors, setPwFieldErrors] = useState({});
 
   const initials = (user?.fullName || 'U').split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
 
   async function handleSaveProfile(e) {
     e.preventDefault();
+    const errs = {};
+    const nameErr = validateRequired(profileForm.fullName, 'Họ và tên');
+    if (nameErr) errs.fullName = nameErr;
+    const phoneErr = validatePhone(profileForm.phoneNumber);
+    if (phoneErr) errs.phoneNumber = phoneErr;
+    setProfileFieldErrors(errs);
+    if (Object.keys(errs).length > 0) return;
+
     setLoading(true);
     setError('');
     try {
@@ -33,7 +44,14 @@ export function ProfileSettingsPage() {
 
   async function handleChangePassword(e) {
     e.preventDefault();
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) { setPwError('Mật khẩu xác nhận không khớp.'); return; }
+    const errs = {};
+    const pwErr = validatePassword(passwordForm.newPassword);
+    if (pwErr) errs.newPassword = pwErr;
+    const confirmErr = validateConfirmPassword(passwordForm.newPassword, passwordForm.confirmPassword);
+    if (confirmErr) errs.confirmPassword = confirmErr;
+    setPwFieldErrors(errs);
+    if (Object.keys(errs).length > 0) return;
+
     setPwLoading(true);
     setPwError('');
     try {
@@ -85,11 +103,13 @@ export function ProfileSettingsPage() {
             </div>
             <div className="field-group">
               <label className="field-label">Họ và tên</label>
-              <input className="input-field" required value={profileForm.fullName} onChange={(e) => setProfileForm((p) => ({ ...p, fullName: e.target.value }))} />
+              <input className="input-field" required value={profileForm.fullName} onChange={(e) => { setProfileForm((p) => ({ ...p, fullName: e.target.value })); setProfileFieldErrors((p) => ({ ...p, fullName: '' })); }} />
+              {profileFieldErrors.fullName ? <p className="text-error">{profileFieldErrors.fullName}</p> : null}
             </div>
             <div className="field-group">
               <label className="field-label">Số điện thoại</label>
-              <input className="input-field" pattern="^0\d{9}$" maxLength={10} title="10 chữ số, bắt đầu bằng 0" value={profileForm.phoneNumber} onChange={(e) => setProfileForm((p) => ({ ...p, phoneNumber: e.target.value }))} />
+              <input className="input-field" maxLength={10} placeholder="0912345678" value={profileForm.phoneNumber} onChange={(e) => { setProfileForm((p) => ({ ...p, phoneNumber: e.target.value.replace(/\D/g, '') })); setProfileFieldErrors((p) => ({ ...p, phoneNumber: '' })); }} />
+              {profileFieldErrors.phoneNumber ? <p className="text-error">{profileFieldErrors.phoneNumber}</p> : null}
             </div>
             {error ? <p className="text-error" style={{ fontSize: '0.875rem' }}>{error}</p> : null}
             <button type="submit" className="btn-primary" style={{ width: 'fit-content', marginTop: '0.5rem' }} disabled={loading}>{loading ? 'Đang lưu...' : 'Lưu thay đổi'}</button>
@@ -108,11 +128,13 @@ export function ProfileSettingsPage() {
             </div>
             <div className="field-group">
               <label className="field-label">Mật khẩu mới</label>
-              <input className="input-field" type="password" required minLength={8} value={passwordForm.newPassword} onChange={(e) => setPasswordForm((p) => ({ ...p, newPassword: e.target.value }))} />
+              <input className="input-field" type="password" required minLength={8} placeholder="Tối thiểu 8 ký tự (a-z, A-Z, 0-9)" value={passwordForm.newPassword} onChange={(e) => { setPasswordForm((p) => ({ ...p, newPassword: e.target.value })); setPwFieldErrors((p) => ({ ...p, newPassword: '' })); }} />
+              {pwFieldErrors.newPassword ? <p className="text-error">{pwFieldErrors.newPassword}</p> : null}
             </div>
             <div className="field-group">
               <label className="field-label">Xác nhận mật khẩu mới</label>
-              <input className="input-field" type="password" required minLength={8} value={passwordForm.confirmPassword} onChange={(e) => setPasswordForm((p) => ({ ...p, confirmPassword: e.target.value }))} />
+              <input className="input-field" type="password" required minLength={8} value={passwordForm.confirmPassword} onChange={(e) => { setPasswordForm((p) => ({ ...p, confirmPassword: e.target.value })); setPwFieldErrors((p) => ({ ...p, confirmPassword: '' })); }} />
+              {pwFieldErrors.confirmPassword ? <p className="text-error">{pwFieldErrors.confirmPassword}</p> : null}
             </div>
             {pwError ? <p className="text-error" style={{ fontSize: '0.875rem' }}>{pwError}</p> : null}
             <button type="submit" className="btn-primary" style={{ width: 'fit-content', marginTop: '0.5rem' }} disabled={pwLoading}>{pwLoading ? 'Đang xử lý...' : 'Đổi mật khẩu'}</button>

@@ -10,6 +10,7 @@ import { Modal } from '../../components/ui/Modal';
 import { confirmAction, notifyError, notifySuccess } from '../../lib/notify';
 import { parseUsersFromExcel, downloadUserImportTemplate } from '../../lib/excel';
 import { Pagination } from '../../components/ui/Pagination';
+import { validateEmail, validatePassword, validatePhone, validateRequired } from '../../lib/validate';
 
 export function AdminUsersPage() {
   const [users, setUsers] = useState([]);
@@ -26,6 +27,7 @@ export function AdminUsersPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createForm, setCreateForm] = useState({ fullName: '', email: '', password: '', phoneNumber: '', role: 'STUDENT' });
   const [creating, setCreating] = useState(false);
+  const [createFieldErrors, setCreateFieldErrors] = useState({});
 
   // Edit user
   const [showEditModal, setShowEditModal] = useState(false);
@@ -70,12 +72,25 @@ export function AdminUsersPage() {
   // CREATE
   async function handleCreate(e) {
     e.preventDefault();
+    const errs = {};
+    const nameErr = validateRequired(createForm.fullName, 'Họ và tên');
+    if (nameErr) errs.fullName = nameErr;
+    const emailErr = validateEmail(createForm.email);
+    if (emailErr) errs.email = emailErr;
+    const pwErr = validatePassword(createForm.password);
+    if (pwErr) errs.password = pwErr;
+    const phoneErr = validatePhone(createForm.phoneNumber);
+    if (phoneErr) errs.phoneNumber = phoneErr;
+    setCreateFieldErrors(errs);
+    if (Object.keys(errs).length > 0) return;
+
     setCreating(true);
     try {
       await createUserApi(createForm);
       notifySuccess('Đã tạo người dùng thành công.');
       setShowCreateModal(false);
       setCreateForm({ fullName: '', email: '', password: '', phoneNumber: '', role: 'STUDENT' });
+      setCreateFieldErrors({});
       fetchUsers();
     } catch (err) {
       setError(err.message);
@@ -290,15 +305,18 @@ export function AdminUsersPage() {
           </div>
           <div className="field-group">
             <label className="field-label">Email</label>
-            <input className="input-field" type="email" required value={createForm.email} onChange={(e) => setCreateForm((p) => ({ ...p, email: e.target.value }))} />
+            <input className="input-field" type="email" required value={createForm.email} onChange={(e) => { setCreateForm((p) => ({ ...p, email: e.target.value })); setCreateFieldErrors((p) => ({ ...p, email: '' })); }} />
+            {createFieldErrors.email ? <p className="text-error">{createFieldErrors.email}</p> : null}
           </div>
           <div className="field-group">
             <label className="field-label">Mật khẩu</label>
-            <input className="input-field" type="password" required minLength={8} value={createForm.password} onChange={(e) => setCreateForm((p) => ({ ...p, password: e.target.value }))} />
+            <input className="input-field" type="password" required minLength={8} placeholder="Tối thiểu 8 ký tự (a-z, A-Z, 0-9)" value={createForm.password} onChange={(e) => { setCreateForm((p) => ({ ...p, password: e.target.value })); setCreateFieldErrors((p) => ({ ...p, password: '' })); }} />
+            {createFieldErrors.password ? <p className="text-error">{createFieldErrors.password}</p> : null}
           </div>
           <div className="field-group">
             <label className="field-label">Số điện thoại</label>
-            <input className="input-field" pattern="^0\d{9}$" maxLength={10} value={createForm.phoneNumber} onChange={(e) => setCreateForm((p) => ({ ...p, phoneNumber: e.target.value }))} />
+            <input className="input-field" maxLength={10} placeholder="0912345678" value={createForm.phoneNumber} onChange={(e) => { setCreateForm((p) => ({ ...p, phoneNumber: e.target.value.replace(/\D/g, '') })); setCreateFieldErrors((p) => ({ ...p, phoneNumber: '' })); }} />
+            {createFieldErrors.phoneNumber ? <p className="text-error">{createFieldErrors.phoneNumber}</p> : null}
           </div>
           <div className="field-group">
             <label className="field-label">Vai trò</label>
@@ -324,7 +342,7 @@ export function AdminUsersPage() {
           </div>
           <div className="field-group">
             <label className="field-label">Số điện thoại</label>
-            <input className="input-field" pattern="^0\d{9}$" maxLength={10} value={editForm.phoneNumber} onChange={(e) => setEditForm((p) => ({ ...p, phoneNumber: e.target.value }))} />
+            <input className="input-field" maxLength={10} placeholder="0912345678" value={editForm.phoneNumber} onChange={(e) => setEditForm((p) => ({ ...p, phoneNumber: e.target.value.replace(/\D/g, '') }))} />
           </div>
           <div className="field-group">
             <label className="field-label">Vai trò</label>

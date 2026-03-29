@@ -1,16 +1,24 @@
 import { useState } from 'react';
 import { AuthLayout } from '../../layouts/AuthLayout';
 import { forgotPasswordApi } from '../../api/authApi';
+import { validateEmail } from '../../lib/validate';
 
 export function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [fieldError, setFieldError] = useState('');
   const [success, setSuccess] = useState('');
 
   async function handleSubmit(e) {
     e.preventDefault();
+    const emailErr = validateEmail(email);
+    if (emailErr) {
+      setFieldError(emailErr);
+      return;
+    }
     setError('');
+    setFieldError('');
     setSuccess('');
     setLoading(true);
     try {
@@ -28,7 +36,8 @@ export function ForgotPasswordPage() {
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         <div className="field-group">
           <label className="field-label">Email</label>
-          <input className="input-field" type="email" required placeholder="student@utc.edu.vn" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <input className="input-field" type="email" required placeholder="student@utc.edu.vn" value={email} onChange={(e) => { setEmail(e.target.value); setFieldError(''); }} />
+          {fieldError ? <p className="text-error">{fieldError}</p> : null}
         </div>
         {error ? <p className="text-error">{error}</p> : null}
         {success ? <p className="text-success">{success}</p> : null}

@@ -948,6 +948,7 @@ select.input-field {
 /* ─── Mobile ─── */
 @media (max-width: 768px) {
   .sidebar { transform: translateX(-100%); width: 260px; }
+  .sidebar.sidebar-collapsed { width: 260px; }
   .sidebar.sidebar-mobile-open { transform: translateX(0); }
   .dashboard-main, .dashboard-main-collapsed { margin-left: 0; }
   .dashboard-content { padding: 1rem; }
@@ -956,6 +957,25 @@ select.input-field {
     inset: 0;
     background: rgba(0,0,0,0.4);
     z-index: 35;
+  }
+  .sidebar-collapse-toggle { display: none !important; }
+  .sidebar-mobile-close {
+    display: flex !important;
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    background: rgba(255,255,255,0.1);
+    border: none;
+    border-radius: var(--radius-sm);
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 0.375rem;
+    z-index: 1;
+    transition: all var(--transition-fast);
+  }
+  .sidebar-mobile-close:hover {
+    background: rgba(255,255,255,0.2);
+    color: #e2e8f0;
   }
 }
 

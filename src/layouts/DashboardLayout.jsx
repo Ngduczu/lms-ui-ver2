@@ -68,6 +68,14 @@ export function DashboardLayout({ children, title, subtitle }) {
 
       {/* Sidebar */}
       <aside className={`sidebar ${collapsed ? 'sidebar-collapsed' : ''} ${mobileOpen ? 'sidebar-mobile-open' : ''}`}>
+        {/* Mobile close button */}
+        <button
+          className="sidebar-mobile-close"
+          style={{ display: 'none' }}
+          onClick={() => setMobileOpen(false)}
+        >
+          <X size={18} />
+        </button>
         <div className="sidebar-logo">
           <div className="sidebar-logo-icon">U</div>
           {!collapsed ? <span>UTC LMS</span> : null}
@@ -102,9 +110,9 @@ export function DashboardLayout({ children, title, subtitle }) {
           })}
         </nav>
 
-        {/* Collapse toggle */}
+        {/* Collapse toggle – hidden on mobile */}
         <button
-          className="sidebar-link"
+          className="sidebar-link sidebar-collapse-toggle"
           onClick={() => setCollapsed((p) => !p)}
           title={collapsed ? 'Mở rộng' : 'Thu gọn'}
           style={{ margin: '0 0.75rem', flexShrink: 0 }}
