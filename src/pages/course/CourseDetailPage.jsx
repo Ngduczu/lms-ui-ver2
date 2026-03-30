@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, CheckCircle, Download } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Download, MessageSquare } from 'lucide-react';
 import {
   getAssessmentsByCourseApi,
   getMyAssessmentAttemptsApi,
@@ -9,6 +9,7 @@ import { getCourseMaterialsApi, getMaterialDownloadUrlApi } from '../../api/mate
 import { notifyInfo } from '../../lib/notify';
 import { DashboardLayout } from '../../layouts/DashboardLayout';
 import { StatusBadge } from '../../components/ui/StatusBadge';
+import { CourseChatWidget } from '../../components/ui/CourseChatWidget';
 
 const TABS = {
   MATERIAL: 'MATERIAL',
@@ -30,6 +31,7 @@ export function CourseDetailPage() {
   const [completedExamIds, setCompletedExamIds] = useState(new Set());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   /* ── Fetch tài liệu ── */
   useEffect(() => {
@@ -142,6 +144,9 @@ export function CourseDetailPage() {
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem' }}>
         <button className="btn-secondary btn-sm" onClick={() => navigate(-1)}>
           <ArrowLeft size={14} /> Quay lại
+        </button>
+        <button className="btn-primary btn-sm" onClick={() => setIsChatOpen(true)} style={{ background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none' }}>
+          <MessageSquare size={14} /> Thảo luận chung
         </button>
       </div>
 
@@ -358,6 +363,8 @@ export function CourseDetailPage() {
           </table>
         </div>
       ) : null}
+
+      <CourseChatWidget courseId={courseId} isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
     </DashboardLayout>
   );
 }

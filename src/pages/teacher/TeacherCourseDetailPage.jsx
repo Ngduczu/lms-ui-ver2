@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ArrowLeft, Download, FolderKanban, RefreshCcw, Trash2, Upload, Users, BookOpen, Settings } from 'lucide-react';
+import { ArrowLeft, Download, FolderKanban, RefreshCcw, Trash2, Upload, Users, BookOpen, Settings, MessageSquare } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { getCourseByIdApi, updateCourseApi } from '../../api/courseApi';
@@ -10,6 +10,7 @@ import { StatusBadge } from '../../components/ui/StatusBadge';
 import { Modal } from '../../components/ui/Modal';
 import { useAuth } from '../../hooks/useAuth';
 import { confirmAction, notifyError, notifySuccess } from '../../lib/notify';
+import { CourseChatWidget } from '../../components/ui/CourseChatWidget';
 
 function getMaterialDisplayName(item) {
   const name = String(item?.name || '').trim();
@@ -39,6 +40,7 @@ export function TeacherCourseDetailPage() {
   const [materialForm, setMaterialForm] = useState({ name: '', type: 'PDF', file: null });
   const [showCourseForm, setShowCourseForm] = useState(false);
   const [courseForm, setCourseForm] = useState({ name: '', description: '', maxStudent: 1, status: 'OPEN' });
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   /* Fetch course detail by ID */
   const fetchCourseDetail = useCallback(async () => {
@@ -178,6 +180,7 @@ export function TeacherCourseDetailPage() {
         <button className="btn-secondary btn-sm" onClick={() => navigate('/teacher')}><ArrowLeft size={14} /> Quay lại</button>
         <button className="btn-secondary btn-sm" onClick={() => setShowCourseForm(true)}><Settings size={14} /> Chỉnh sửa</button>
         <button className="btn-secondary btn-sm" onClick={fetchCourseDetail}><RefreshCcw size={14} /> Làm mới</button>
+        <button className="btn-primary btn-sm" onClick={() => setIsChatOpen(true)} style={{ background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none' }}><MessageSquare size={14} /> Thảo luận chung</button>
         <button className="btn-primary btn-sm" onClick={() => navigate(`/teacher/course/${courseId}/assessments`)}><FolderKanban size={14} /> Quản lý đề</button>
       </div>
 
@@ -386,6 +389,8 @@ export function TeacherCourseDetailPage() {
           </div>
         </form>
       </Modal>
+
+      <CourseChatWidget courseId={courseId} isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
     </DashboardLayout>
   );
 }

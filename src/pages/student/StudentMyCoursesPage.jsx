@@ -26,7 +26,15 @@ export function StudentMyCoursesPage() {
         {courses.map((c, i) => (
           <motion.div key={c.courseId || i} className="card" style={{ padding: '1.25rem', cursor: 'pointer' }} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} onClick={() => navigate(`/student/course/${c.courseId}/detail`)}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-              <div style={{ width: '2.5rem', height: '2.5rem', borderRadius: '0.5rem', background: 'linear-gradient(135deg, #059669, #10b981)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}><BookOpen size={18} /></div>
+              <div style={{ position: 'relative', width: '2.5rem', height: '2.5rem', borderRadius: '0.5rem', background: 'linear-gradient(135deg, #059669, #10b981)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+                <BookOpen size={18} />
+                {(() => {
+                  const hasNew = c.latestMessageAt && (!localStorage.getItem(`chat_read_${c.courseId}`) || new Date(c.latestMessageAt) > new Date(localStorage.getItem(`chat_read_${c.courseId}`)));
+                  return hasNew ? (
+                    <span style={{ position: 'absolute', top: '-4px', right: '-4px', width: '12px', height: '12px', background: '#ef4444', borderRadius: '50%', border: '2px solid #fff' }} title="Có tin nhắn mới"></span>
+                  ) : null;
+                })()}
+              </div>
               <StatusBadge status={c.enrollmentStatus} />
             </div>
             <h3 style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.25rem' }}>{c.courseName}</h3>

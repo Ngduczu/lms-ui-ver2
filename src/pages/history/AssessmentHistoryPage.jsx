@@ -176,7 +176,7 @@ export function AssessmentHistoryPage() {
                   {isTeacherOrAdmin ? <td>{a.studentEmail || '-'}</td> : null}
                   <td>{fmtDT(a.startTime)}</td>
                   <td>{fmtDT(a.submitTime)}</td>
-                  <td className="cell-center"><span style={{ fontWeight: 700, color: (a.violationCount || 0) > 0 ? '#dc2626' : '#059669' }}>{a.violationCount || 0}</span></td>
+                  <td className="cell-center"><span style={{ fontWeight: 700, color: (a.violationCount) > 0 ? '#dc2626' : '#059669' }}>{a.violationCount}</span></td>
                   <td className="cell-center"><span style={{ fontWeight: 700 }}>{a.score ?? '-'}</span></td>
                   <td className="cell-center"><button className="btn-secondary btn-sm" onClick={() => viewDetail(a.attemptId || a.id)}><Eye size={14} /></button></td>
                 </tr>

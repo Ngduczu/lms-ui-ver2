@@ -168,11 +168,18 @@ export function TeacherMyCoursesPage() {
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
               <div style={{
+                position: 'relative',
                 width: '2.5rem', height: '2.5rem', borderRadius: '0.5rem',
                 background: 'linear-gradient(135deg, #6366f1, #a855f7)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff',
               }}>
                 <BookOpen size={18} />
+                {(() => {
+                  const hasNew = c.latestMessageAt && (!localStorage.getItem(`chat_read_${c.id}`) || new Date(c.latestMessageAt) > new Date(localStorage.getItem(`chat_read_${c.id}`)));
+                  return hasNew ? (
+                    <span style={{ position: 'absolute', top: '-4px', right: '-4px', width: '12px', height: '12px', background: '#ef4444', borderRadius: '50%', border: '2px solid #fff' }} title="Có tin nhắn mới"></span>
+                  ) : null;
+                })()}
               </div>
               <StatusBadge status={c.status} />
             </div>
