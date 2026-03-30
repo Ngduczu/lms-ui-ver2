@@ -4,6 +4,7 @@ import { MessageSquare, X, Send, Loader2 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { getCourseChatRoomApi, getMessagesApi } from '../../api/chatApi';
 import { StompConnection } from '../../lib/stompClient';
+import { getStoredToken } from '../../lib/storage';
 
 export function CourseChatWidget({ courseId, isOpen, onClose }) {
   const { user } = useAuth();
@@ -29,30 +30,29 @@ export function CourseChatWidget({ courseId, isOpen, onClose }) {
 
     let isMounted = true;
     const initChat = async () => {
+      setMessages([]); // Force clear old messages
       setLoading(true);
       setError(null);
       try {
-        // 1. Fetch Room ID
+
         const roomRes = await getCourseChatRoomApi(courseId);
         const fetchedRoomId = roomRes?.data?.id || roomRes?.id;
         if (!fetchedRoomId) throw new Error("Chưa khởi tạo được phòng chat.");
         
         if (isMounted) setRoomId(fetchedRoomId);
 
-        // 2. Fetch History
+
         const histRes = await getMessagesApi(fetchedRoomId);
         if (isMounted) {
-          // APIs typically return messages sorted by newest first (DESC), 
-          // we want oldest first (ASC) for chatting display
-          const history = Array.isArray(histRes?.data) ? histRes.data : [];
+
+          const innerData = Array.isArray(histRes) ? histRes : (histRes?.data || []);
+          const history = Array.isArray(innerData) ? innerData : [];
           setMessages([...history].reverse());
           
-          // Update last read mark
           localStorage.setItem(`chat_read_${courseId}`, new Date().toISOString());
         }
 
-        // 3. Connect WebSocket
-        const token = localStorage.getItem('token');
+        const token = getStoredToken();
         if (token && isMounted) {
           const stomp = new StompConnection(fetchedRoomId, token, (newMsg) => {
             setMessages((prev) => [...prev, newMsg]);
@@ -75,7 +75,9 @@ export function CourseChatWidget({ courseId, isOpen, onClose }) {
       isMounted = false;
       if (stompClientRef.current) {
         stompClientRef.current.disconnect();
+        stompClientRef.current = null;
       }
+      setLoading(false);
       localStorage.setItem(`chat_read_${courseId}`, new Date().toISOString());
     };
   }, [isOpen, courseId]);
@@ -98,15 +100,14 @@ export function CourseChatWidget({ courseId, isOpen, onClose }) {
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
           style={{
             position: 'fixed', bottom: '1.5rem', right: '1.5rem',
-            width: '350px', height: '500px', backgroundColor: '#fff',
-            borderRadius: '1rem', boxShadow: '0 10px 40px rgba(0,0,0,0.15)',
+            width: '360px', height: '520px', backgroundColor: 'var(--color-surface)',
+            borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-modal)',
             display: 'flex', flexDirection: 'column', zIndex: 9999, overflow: 'hidden',
-            border: '1px solid #e2e8f0'
+            border: '1px solid var(--color-border)'
           }}
         >
-          {/* Header */}
           <div style={{
-            padding: '1rem', background: 'linear-gradient(135deg, #4f46e5, #3b82f6)',
+            padding: '1rem', background: 'linear-gradient(135deg, var(--color-primary), var(--color-accent))',
             color: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -123,17 +124,17 @@ export function CourseChatWidget({ courseId, isOpen, onClose }) {
 
           {/* Body */}
           <div ref={scrollContainerRef} style={{
-            flex: 1, overflowY: 'auto', padding: '1rem', background: '#f8fafc',
+            flex: 1, overflowY: 'auto', padding: '1rem', background: 'var(--color-surface-alt)',
             display: 'flex', flexDirection: 'column', gap: '0.75rem'
           }}>
             {loading ? (
-              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: '#94a3b8' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: 'var(--color-text-muted)' }}>
                 <Loader2 className="spin" size={24} />
               </div>
             ) : error ? (
-              <div style={{ color: '#ef4444', textAlign: 'center', fontSize: '0.875rem' }}>{error}</div>
+              <div style={{ color: 'var(--color-error)', textAlign: 'center', fontSize: '0.875rem' }}>{error}</div>
             ) : messages.length === 0 ? (
-              <div style={{ textAlign: 'center', color: '#94a3b8', fontSize: '0.875rem', marginTop: 'auto', marginBottom: 'auto' }}>
+              <div style={{ textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.875rem', marginTop: 'auto', marginBottom: 'auto' }}>
                 Hãy là người đầu tiên nhắn tin!
               </div>
             ) : (
@@ -144,24 +145,39 @@ export function CourseChatWidget({ courseId, isOpen, onClose }) {
                 return (
                   <div key={msg.id || idx} style={{
                     display: 'flex', flexDirection: 'column',
-                    alignItems: isMe ? 'flex-end' : 'flex-start'
+                    alignItems: isMe ? 'flex-end' : 'flex-start',
+                    width: '100%',
                   }}>
                     {!isMe && (
-                      <span style={{ fontSize: '0.65rem', color: '#94a3b8', marginBottom: '2px', marginLeft: '2px' }}>
-                        Thành viên
+                      <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', marginBottom: '4px', marginLeft: '36px' }}>
+                        {msg.senderName || 'Thành viên'}
                       </span>
                     )}
                     <div style={{
-                      maxWidth: '85%', padding: '0.6rem 0.85rem',
-                      borderRadius: '1rem', fontSize: '0.875rem',
-                      background: isMe ? '#e0e7ff' : '#fff',
-                      color: isMe ? '#1e3a8a' : '#334155',
-                      border: isMe ? 'none' : '1px solid #e2e8f0',
-                      borderBottomRightRadius: isMe ? '0.25rem' : '1rem',
-                      borderBottomLeftRadius: isMe ? '1rem' : '0.25rem',
-                      wordBreak: 'break-word'
+                      display: 'flex',
+                      flexDirection: isMe ? 'row-reverse' : 'row',
+                      gap: '0.5rem',
+                      alignItems: 'flex-start',
+                      maxWidth: '90%',
                     }}>
-                      {msg.content}
+                      <img 
+                        src={msg.senderAvatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(msg.senderName || 'U')}&background=${isMe ? '7c3aed' : 'e2e8f0'}&color=${isMe ? 'fff' : '475569'}`} 
+                        alt="avatar" 
+                        style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0, marginTop: '2px' }}
+                      />
+                      <div style={{
+                        padding: '0.6rem 0.85rem',
+                        borderRadius: '1rem', fontSize: '0.875rem',
+                        background: isMe ? 'linear-gradient(135deg, var(--color-primary), var(--color-accent))' : 'var(--color-surface)',
+                        color: isMe ? '#ffffff' : 'var(--color-text)',
+                        border: isMe ? 'none' : '1px solid var(--color-border)',
+                        borderBottomRightRadius: isMe ? '0.25rem' : '1rem',
+                        borderBottomLeftRadius: isMe ? '1rem' : '0.25rem',
+                        wordBreak: 'break-word',
+                        boxShadow: 'var(--shadow-card)'
+                      }}>
+                        {msg.content}
+                      </div>
                     </div>
                   </div>
                 );
@@ -170,9 +186,8 @@ export function CourseChatWidget({ courseId, isOpen, onClose }) {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input */}
           <form onSubmit={handleSend} style={{
-            padding: '0.75rem', background: '#fff', borderTop: '1px solid #f1f5f9',
+            padding: '0.875rem', background: 'var(--color-surface)', borderTop: '1px solid var(--color-border)',
             display: 'flex', gap: '0.5rem'
           }}>
             <input
@@ -182,21 +197,25 @@ export function CourseChatWidget({ courseId, isOpen, onClose }) {
               onChange={(e) => setInputText(e.target.value)}
               disabled={loading || !!error}
               style={{
-                flex: 1, padding: '0.5rem 0.75rem', borderRadius: '99px',
-                border: '1px solid #e2e8f0', fontSize: '0.875rem', outline: 'none'
+                flex: 1, padding: '0.625rem 1rem', borderRadius: '99px',
+                border: '1px solid var(--color-border)', fontSize: '0.875rem', outline: 'none',
+                background: 'var(--color-surface-alt)', color: 'var(--color-text)',
+                transition: 'all var(--transition-fast)'
               }}
+              onFocus={(e) => { e.target.style.borderColor = 'var(--color-primary)'; e.target.style.background = 'var(--color-surface)' }}
+              onBlur={(e) => { e.target.style.borderColor = 'var(--color-border)'; e.target.style.background = 'var(--color-surface-alt)' }}
             />
             <button
               type="submit"
               disabled={!inputText.trim() || loading || !!error}
               style={{
-                width: '36px', height: '36px', borderRadius: '50%', border: 'none',
-                background: inputText.trim() ? '#4f46e5' : '#e2e8f0',
+                width: '40px', height: '40px', borderRadius: '50%', border: 'none',
+                background: inputText.trim() ? 'linear-gradient(135deg, var(--color-primary), var(--color-accent))' : 'var(--color-border)',
                 color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: inputText.trim() ? 'pointer' : 'not-allowed', transition: 'background 0.2s'
+                cursor: inputText.trim() ? 'pointer' : 'not-allowed', transition: 'all var(--transition-fast)'
               }}
             >
-              <Send size={16} />
+              <Send size={16} style={{ marginLeft: inputText.trim() ? '2px' : '0' }}/>
             </button>
           </form>
         </motion.div>

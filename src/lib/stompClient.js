@@ -1,7 +1,6 @@
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-
-const WEBSOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:8080';
+import { API_BASE_URL } from './env';
 
 export class StompConnection {
   constructor(roomId, token, onMessageReceived) {
@@ -15,7 +14,7 @@ export class StompConnection {
   connect() {
     this.client = new Client({
       // We use SockJS as fallback or direct depending on STOMP config
-      webSocketFactory: () => new SockJS(`${WEBSOCKET_URL}/ws-chat`),
+      webSocketFactory: () => new SockJS(`${API_BASE_URL}/ws-chat`),
       connectHeaders: {
         Authorization: `Bearer ${this.token}`,
       },

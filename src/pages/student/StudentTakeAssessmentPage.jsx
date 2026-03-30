@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AlertTriangle, ChevronLeft, ChevronRight, Clock, Moon, Send, Sun } from 'lucide-react';
-import { getAssessmentDetailApi, startAssessmentAttemptApi, submitAssessmentAttemptApi } from '../../api/assessmentApi';
+import { getAssessmentDetailApi, startAssessmentAttemptApi, submitAssessmentAttemptApi, updateAssessmentAttemptViolationApi } from '../../api/assessmentApi';
 import { confirmAction, notifyError, notifySuccess } from '../../lib/notify';
 
 export function StudentTakeAssessmentPage() {
@@ -16,8 +16,8 @@ export function StudentTakeAssessmentPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
-  const [violationCount, setViolationCount] = useState(0);
   const [started, setStarted] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [error, setError] = useState('');
   const timerRef = useRef(null);
 
@@ -66,14 +66,14 @@ export function StudentTakeAssessmentPage() {
     if (!started || submitted) return;
 
     function onFullscreenChange() {
-      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+      const isFull = !!(document.fullscreenElement || document.webkitFullscreenElement);
+      setIsFullscreen(isFull);
+      if (!isFull) {
         setViolationCount((p) => {
           const next = p + 1;
           notifyError(`⚠ Vi phạm #${next}: Bạn đã thoát chế độ toàn màn hình!`);
           return next;
         });
-        // Force back
-        setTimeout(requestFullscreen, 300);
       }
     }
 
@@ -95,18 +95,74 @@ export function StudentTakeAssessmentPage() {
       }
     }
 
+    function onKeyDown(e) {
+      const key = e.key ? e.key.toLowerCase() : '';
+      if (
+        key === 'f12' ||
+        (e.ctrlKey && e.shiftKey && ['i', 'j', 'c'].includes(key)) ||
+        (e.metaKey && e.altKey && ['i', 'j', 'c'].includes(key)) ||
+        (e.ctrlKey && key === 'u') ||
+        (e.metaKey && key === 'u')
+      ) {
+        e.preventDefault();
+        setViolationCount((p) => {
+          const next = p + 1;
+          notifyError(`⚠ Vi phạm #${next}: Hành vi nhấn phím tắt không hợp lệ!`);
+          return next;
+        });
+      }
+    }
+
+    function onContextMenu(e) {
+      e.preventDefault();
+    }
+
     document.addEventListener('fullscreenchange', onFullscreenChange);
     document.addEventListener('webkitfullscreenchange', onFullscreenChange);
     window.addEventListener('blur', onBlur);
     document.addEventListener('visibilitychange', onVisibilityChange);
+    document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('contextmenu', onContextMenu);
+
+    // Bẫy DevTools: Nếu mở panel Console/DevTools nó sẽ liên tục bị Pause
+    const devtoolsTrap = setInterval(() => {
+      /* eslint-disable no-debugger */
+      debugger;
+      /* eslint-enable no-debugger */
+    }, 1500);
 
     return () => {
       document.removeEventListener('fullscreenchange', onFullscreenChange);
       document.removeEventListener('webkitfullscreenchange', onFullscreenChange);
       window.removeEventListener('blur', onBlur);
       document.removeEventListener('visibilitychange', onVisibilityChange);
+      document.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('contextmenu', onContextMenu);
+      clearInterval(devtoolsTrap);
     };
   }, [started, submitted]);
+
+  // Auto-submit if violation > 5
+  useEffect(() => {
+    if (violationCount > 5 && started && !submitted && !submitting) {
+      notifyError('Bạn đã vi phạm quá 5 lần. Hệ thống tự động nộp bài.');
+      handleSubmit(true);
+    }
+  }, [violationCount, started, submitted, submitting]);
+
+  // Sync violation count every 2 minutes
+  const violationCountRef = useRef(0);
+  useEffect(() => {
+    violationCountRef.current = violationCount;
+  }, [violationCount]);
+
+  useEffect(() => {
+    if (!started || submitted || !attemptId) return;
+    const syncInterval = setInterval(() => {
+      updateAssessmentAttemptViolationApi(assessmentId, attemptId, violationCountRef.current).catch(() => {});
+    }, 120000); // 2 minutes
+    return () => clearInterval(syncInterval);
+  }, [started, submitted, attemptId, assessmentId]);
 
   function handleSelectAnswer(question, answerItemOrText) {
     const qid = question.questionId || question.id;
@@ -191,20 +247,33 @@ export function StudentTakeAssessmentPage() {
     );
   }
 
+  if (started && !submitted && !isFullscreen) {
+    return (
+      <div className={`assessment-shell ${darkMode ? 'assessment-dark' : 'assessment-light'}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', textAlign: 'center', padding: '2rem' }}>
+        <div style={{ width: '4rem', height: '4rem', borderRadius: '50%', background: 'linear-gradient(135deg, #dc2626, #b91c1c)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem' }}>
+          <AlertTriangle size={24} style={{ color: '#fff' }} />
+        </div>
+        <h1 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '0.5rem' }}>Đã thoát toàn màn hình!</h1>
+        <p style={{ color: '#64748b', marginBottom: '1.5rem', maxWidth: '24rem' }}>Bài thi tạm ẩn để đảm bảo công bằng. Vui lòng quay lại chế độ toàn màn hình để hiện lại đề thi.</p>
+        <button className="btn-primary" onClick={requestFullscreen}>Vào lại toàn màn hình</button>
+      </div>
+    );
+  }
+
   return (
     <div className={`assessment-shell ${darkMode ? 'assessment-dark' : 'assessment-light'}`}>
       {/* Topbar */}
-      <div style={{ position: 'sticky', top: 0, zIndex: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1.5rem', borderBottom: '1px solid var(--color-border)', background: darkMode ? 'rgba(15,23,42,0.9)' : 'rgba(255,255,255,0.9)', backdropFilter: 'blur(8px)' }}>
-        <h2 style={{ fontWeight: 700, fontSize: '1rem' }}>{assessment?.title || 'Bài thi'}</h2>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          {violationCount > 0 ? <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#dc2626', fontWeight: 600, fontSize: '0.8125rem' }}><AlertTriangle size={14} /> {violationCount} vi phạm</span> : null}
-          <span style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontWeight: 700, fontSize: '1rem', fontFamily: 'monospace', color: isUrgent ? '#dc2626' : undefined }}><Clock size={16} />{timerStr}</span>
-          <button className="btn-icon" onClick={() => setDarkMode((p) => !p)} title="Đổi theme">{darkMode ? <Sun size={18} /> : <Moon size={18} />}</button>
-          <button className="btn-primary btn-sm" onClick={() => handleSubmit(false)} disabled={submitting}><Send size={14} /> Nộp bài</button>
+      <div className="flex flex-wrap items-center justify-between gap-3 p-3 md:px-6 md:py-3 sticky top-0 z-20 border-b backdrop-blur-md" style={{ borderBottomColor: 'var(--color-border)', background: darkMode ? 'rgba(15,23,42,0.9)' : 'rgba(255,255,255,0.9)' }}>
+        <h2 style={{ fontWeight: 700, fontSize: '0.9375rem', flex: 1, minWidth: '120px' }} className="text-ellipsis-1">{assessment?.title || 'Bài thi'}</h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          {violationCount > 0 ? <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#dc2626', fontWeight: 600, fontSize: '0.75rem' }}><AlertTriangle size={14} /> <span className="hidden sm:inline">{violationCount} vi phạm</span><span className="sm:hidden">{violationCount} lỗi</span></span> : null}
+          <span style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontWeight: 700, fontSize: '0.9375rem', fontFamily: 'monospace', color: isUrgent ? '#dc2626' : undefined }}><Clock size={16} />{timerStr}</span>
+          <button className="btn-icon p-1.5!" onClick={() => setDarkMode((p) => !p)} title="Đổi theme">{darkMode ? <Sun size={18} /> : <Moon size={18} />}</button>
+          <button className="btn-primary btn-sm px-2! md:px-4!" onClick={() => handleSubmit(false)} disabled={submitting}><Send size={14} /> <span className="hidden sm:inline">Nộp bài</span></button>
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: '1.5rem', padding: '1.5rem', maxWidth: '72rem', margin: '0 auto' }}>
+      <div className="flex flex-col-reverse md:grid md:grid-cols-[1fr_280px] gap-4 md:gap-6 p-3 md:p-6 max-w-6xl mx-auto">
         {/* Question area */}
         <div>
           {/* Progress */}
@@ -253,7 +322,7 @@ export function StudentTakeAssessmentPage() {
         </div>
 
         {/* Question nav sidebar */}
-        <div className="card" style={{ padding: '1rem', alignSelf: 'start', position: 'sticky', top: '4.5rem' }}>
+        <div className="card md:sticky md:top-18 p-4 self-start w-full">
           <h4 style={{ fontWeight: 700, marginBottom: '0.75rem', fontSize: '0.875rem' }}>Bảng câu hỏi</h4>
           <div className="question-nav-grid">
             {questions.map((q, i) => {

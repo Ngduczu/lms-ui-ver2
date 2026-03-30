@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Pencil, Plus, RefreshCcw, Search, Trash2 } from 'lucide-react';
+import { useCallback, useEffect, useState, useRef } from 'react';
+import { Pencil, Plus, RefreshCcw, Search, Trash2, FileUp, Download } from 'lucide-react';
 import { createQuestionBankApi, createQuestionInBankApi, deleteQuestionBankApi, deleteQuestionInBankApi, getQuestionBanksApi, getQuestionsByBankApi, updateQuestionBankApi, updateQuestionInBankApi } from '../../api/questionApi';
 import { DashboardLayout } from '../../layouts/DashboardLayout';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { Modal } from '../../components/ui/Modal';
 import { Pagination } from '../../components/ui/Pagination';
-import { confirmAction, notifySuccess } from '../../lib/notify';
+import { confirmAction, notifyError, notifySuccess } from '../../lib/notify';
+import { parseQuestionsFromExcel, downloadQuestionImportTemplate } from '../../lib/excel';
 
 function getTypeLabel(v) { const u = (v || '').toUpperCase(); return u === 'MULTIPLE_CHOICE' ? 'Trắc nghiệm' : u === 'FILL_IN_BLANK' ? 'Điền khuyết' : v || '-'; }
 function getDiffLabel(v) { const u = (v || '').toUpperCase(); return u === 'EASY' ? 'Dễ' : u === 'MEDIUM' ? 'Vừa' : u === 'HARD' ? 'Khó' : v || '-'; }
@@ -32,6 +33,9 @@ export function TeacherQuestionBanksPage() {
   const initQForm = { questionType: 'MULTIPLE_CHOICE', difficulty: 'EASY', questionContent: '', fillBlankAnswer: '', mcqAnswers: ['', ''], correctIndex: 0 };
   const [qForm, setQForm] = useState({ ...initQForm });
   const [editQForm, setEditQForm] = useState({ ...initQForm });
+
+  const fileRef = useRef(null);
+  const [importing, setImporting] = useState(false);
 
   const selectedBank = banks.find((b) => String(b.id) === String(selectedBankId));
 
@@ -94,6 +98,34 @@ export function TeacherQuestionBanksPage() {
   async function handleUpdateQ(e) { e.preventDefault(); if (!editQForm.questionContent.trim()) { setError('Nhập nội dung.'); return; } try { const ans = buildAnswers(editQForm); await updateQuestionInBankApi(selectedBankId, editingQId, { questionType: editQForm.questionType, difficulty: editQForm.difficulty, questionContent: editQForm.questionContent.trim(), answers: ans }); notifySuccess('Đã cập nhật.'); setShowEditQ(false); fetchQ(selectedBankId); fetchBanks(); } catch (e) { setError(e.message); } }
 
   async function handleDeleteQ(qId) { const ok = await confirmAction({ title: 'Xóa câu hỏi?', confirmText: 'Xóa', variant: 'danger' }); if (!ok) return; try { await deleteQuestionInBankApi(selectedBankId, qId); notifySuccess('Đã xóa.'); fetchQ(selectedBankId); fetchBanks(); } catch (e) { setError(e.message); } }
+
+  async function handleImportExcel(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    try {
+      const qList = await parseQuestionsFromExcel(file);
+      if (!qList.length) throw new Error('File không có dữ liệu câu hỏi hợp lệ.');
+      
+      let successCount = 0;
+      for (const q of qList) {
+        try {
+          await createQuestionInBankApi(selectedBankId, q);
+          successCount++;
+        } catch (err) {
+          console.error("Lỗi khi import câu hỏi:", q.questionContent, err);
+        }
+      }
+      notifySuccess(`Đã import thành công ${successCount}/${qList.length} câu hỏi.`);
+      fetchQ(selectedBankId);
+      fetchBanks();
+    } catch (err) {
+      notifyError(err.message || 'Lỗi khi import file.');
+    } finally {
+      setImporting(false);
+      e.target.value = '';
+    }
+  }
 
   function renderQForm(form, setF, onSubmit, isEdit) {
     return (
@@ -168,7 +200,12 @@ export function TeacherQuestionBanksPage() {
                   <input className="input-field" style={{ paddingLeft: '1.75rem', fontSize: '0.8125rem', padding: '0.375rem 0.75rem 0.375rem 1.75rem' }} placeholder="Tìm nội dung câu hỏi..." value={qSearch} onChange={(e) => setQSearch(e.target.value)} />
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: '0.375rem' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.375rem' }}>
+                <button className="btn-secondary btn-sm" onClick={downloadQuestionImportTemplate} title="Tải file mẫu Excel"><Download size={14} /> File mẫu</button>
+                <input type="file" accept=".xlsx, .xls" hidden ref={fileRef} onChange={handleImportExcel} />
+                <button className="btn-secondary btn-sm" onClick={() => fileRef.current?.click()} disabled={importing}>
+                  <FileUp size={14} /> {importing ? 'Đang import...' : 'Import Excel'}
+                </button>
                 <button className="btn-danger btn-sm" onClick={handleDeleteBank}><Trash2 size={14} /> Xóa ngân hàng</button>
                 <button className="btn-primary btn-sm" onClick={() => setShowCreateQ(true)}><Plus size={14} /> Thêm câu hỏi</button>
               </div>

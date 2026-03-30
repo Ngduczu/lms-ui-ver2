@@ -32,6 +32,10 @@ export function submitAssessmentAttemptApi(assessmentId, attemptId, payload) {
   return http.post(`/assessments/${assessmentId}/attempts/${attemptId}/submit`, payload).then((r) => r.data);
 }
 
+export function updateAssessmentAttemptViolationApi(assessmentId, attemptId, violationCount) {
+  return http.patch(`/assessments/${assessmentId}/attempts/${attemptId}/violation`, { violationCount }).then((r) => r.data);
+}
+
 export function getMyAssessmentAttemptsApi(assessmentId) {
   return http.get(`/assessments/${assessmentId}/attempts/me`).then((r) => r.data);
 }
